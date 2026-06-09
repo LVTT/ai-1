@@ -4,6 +4,7 @@ from config.settings import check_api_key
 from prompts.basics import (
     basic_prompt, role_prompt, instruction_prompt, context_prompt,
     format_prompt, step_by_step_prompt, constraint_prompt, persona_prompt,
+    auto_optimize_prompt,
 )
 from prompts.advanced import (
     few_shot_prompt, chain_of_thought_prompt, self_consistency_prompt,
@@ -27,7 +28,7 @@ with st.sidebar:
     st.header("技巧选择")
     technique_category = st.radio(
         "选择类别",
-        ["基础技巧", "进阶技巧"],
+        ["基础技巧", "进阶技巧", "🤖 智能优化"],
     )
 
 if technique_category == "基础技巧":
@@ -122,7 +123,7 @@ if technique_category == "基础技巧":
             except Exception as e:
                 st.error(f"调用失败：{e}")
 
-else:
+elif technique_category == "进阶技巧":
     st.header("进阶 Prompt 技巧")
 
     technique = st.selectbox(
@@ -217,3 +218,35 @@ else:
                 st.markdown(response.choices[0].message.content)
             except Exception as e:
                 st.error(f"调用失败：{e}")
+
+elif technique_category == "🤖 智能优化":
+    st.header("🤖 智能 Prompt 优化")
+    st.markdown("""
+    输入你的原始问题，AI 会自动分析并选择最适合的 Prompt 技巧组合，
+    生成优化后的完整 Prompt。
+    """)
+
+    user_input = st.text_area("输入你的原始问题", "用 Python 写个快速排序，要注释详细", height=100)
+
+    if st.button("🔍 智能优化") and check_api_key():
+        with st.spinner("正在分析并优化 Prompt..."):
+            try:
+                optimized = auto_optimize_prompt(user_input)
+                st.subheader("优化后的 Prompt")
+                st.code(optimized, language="text")
+
+                if st.button("🚀 调用 LLM 查看效果"):
+                    with st.spinner("正在生成..."):
+                        from openai import OpenAI
+                        from config.settings import OPENAI_API_KEY, OPENAI_BASE_URL, DEFAULT_LLM_MODEL
+                        client = OpenAI(api_key=OPENAI_API_KEY,
+                                        base_url=OPENAI_BASE_URL)
+                        response = client.chat.completions.create(
+                            model=DEFAULT_LLM_MODEL,
+                            messages=[{"role": "user", "content": optimized}],
+                            temperature=0.7,
+                        )
+                        st.markdown("**LLM 回答：**")
+                        st.markdown(response.choices[0].message.content)
+            except Exception as e:
+                st.error(f"优化失败：{e}")

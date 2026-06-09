@@ -135,3 +135,205 @@ planning:
     用户请求：{query}
 
     请输出计划（只输出 JSON，不要其他内容）：
+
+role:
+  name: 角色设定
+  description: 给模型一个明确的角色
+  prompt: |
+    你是一位{role}。请回答以下问题：
+
+    {user_input}
+
+instruction:
+  name: 指令式Prompt
+  description: 明确告诉模型要做什么
+  prompt: |
+    {instruction}：
+
+    {user_input}
+
+context:
+  name: 上下文Prompt
+  description: 提供背景信息后再提问
+  prompt: |
+    背景信息：
+    {context}
+
+    问题：
+    {user_input}
+
+format:
+  name: 格式约束
+  description: 指定输出格式
+  prompt: |
+    {user_input}
+
+    请按照以下格式输出：{output_format}
+
+step_by_step:
+  name: 分步思考
+  description: 引导模型逐步思考
+  prompt: |
+    {user_input}
+
+    请按照以下步骤思考并回答：
+    1. 分析问题关键点
+    2. 逐步推导解决方案
+    3. 给出最终答案
+    4. 验证答案的合理性
+
+constraint:
+  name: 约束条件
+  description: 添加各种限制条件
+  prompt: |
+    {user_input}
+
+    请遵守以下约束条件：
+    {constraints_text}
+
+persona:
+  name: 详细人设
+  description: 构建完整的人物设定
+  prompt: |
+    请扮演以下角色：
+    {persona_text}
+
+    用户问题：
+    {user_input}
+
+chain_of_thought:
+  name: 思维链
+  description: 引导模型展示推理过程
+  prompt: |
+    {reasoning_instruction_section}问题：{user_input}
+
+    请逐步思考这个问题，展示你的推理过程，最后给出答案。
+    格式要求：
+    推理过程：
+    1. ...
+    2. ...
+    ...
+    最终答案：...
+
+self_consistency:
+  name: 自一致性
+  description: 让模型生成多条推理路径
+  prompt: |
+    问题：{user_input}
+
+    请从 {num_paths} 个不同的角度思考这个问题，分别展示推理过程，然后综合所有角度给出最可靠的答案。
+
+    角度 1：
+    推理过程：...
+    结论：...
+
+    角度 2：
+    推理过程：...
+    结论：...
+
+    ...
+
+    综合判断：
+
+tree_of_thoughts:
+  name: 思维树
+  description: 树状思考，探索多种可能性
+  prompt: |
+    问题：{user_input}
+
+    请使用树状思考方式解决这个问题。
+    在每一步生成 {num_branches} 个可能的思考方向，评估每个方向的可行性，然后选择最有希望的方向深入（最多 {depth} 层）。
+
+    思考树结构：
+    步骤 1：
+    - 方向 A：...（评估：优/良/差）
+    - 方向 B：...（评估：优/良/差）
+    - 方向 C：...（评估：优/良/差）
+    选择：方向 X
+
+    步骤 2：
+    ...
+
+    最终结论：
+
+react:
+  name: ReAct模板
+  description: 推理与行动交替进行
+  prompt: |
+    你是一个智能助手，可以使用工具来解决问题。请按照以下格式思考并行动（每一步只输出一个 JSON）：
+    {{
+      "thought": "分析当前情况，决定下一步行动",
+      "action": "工具名称（或 'finish' 表示完成任务）",
+      "action_input": "工具的输入参数（或最终答案）"
+    }}
+
+    注意：
+    - 如果问题可以直接回答，action 填 "finish"
+    - 如果需要信息，使用相应工具
+    - 每次只输出一个 JSON，不要输出多余内容
+
+    当前问题：{query}
+
+    {history}
+
+    请输出下一步（JSON 格式）：
+
+automatic_prompt_engineering:
+  name: 自动Prompt工程
+  description: 让模型自己优化Prompt
+  prompt: |
+    任务描述：{task_description}
+
+    初始 Prompt：{initial_prompt}
+
+    请执行以下步骤来优化这个 Prompt：
+    1. 分析任务的核心需求
+    2. 指出当前 Prompt 的不足
+    3. 提出 3 个改进版本
+    4. 解释每个版本的优劣
+    5. 推荐最佳版本并说明理由
+
+meta_prompting:
+  name: Meta-Prompting
+  description: 让模型先生成Prompt再回答
+  prompt: |
+    用户原始请求：{user_input}
+
+    第一步：请为这个请求设计一个最优的 Prompt 模板。
+    考虑因素：角色设定、输出格式、约束条件、示例等。
+
+    第二步：使用你设计的 Prompt 来回答用户的请求。
+
+    设计的 Prompt：
+    ...
+
+    基于该 Prompt 的回答：
+
+optimize_prompt:
+  name: Prompt智能优化
+  description: 自动分析用户输入并生成最佳Prompt
+  prompt: |
+    你是一位 Prompt 工程专家。请分析用户的原始输入，选择最适合的 Prompt 技巧，并直接输出优化后的完整 Prompt。
+
+    可选技巧及用法：
+    - role: 给模型一个角色，如"你是一位资深程序员"
+    - instruction: 明确指令，如"请用三句话概括"
+    - context: 提供背景，如"我是一个初学者"
+    - format: 指定格式，如"用JSON输出"
+    - step_by_step: 引导逐步思考
+    - constraint: 添加约束条件
+    - persona: 构建完整人设
+    - few_shot: 提供示例引导
+    - chain_of_thought: 展示推理过程
+    - self_consistency: 多角度验证
+    - tree_of_thoughts: 探索多种方案
+
+    要求：
+    1. 选择最适合该输入的 1-2 种技巧组合
+    2. 直接输出优化后的完整 Prompt（可直接发给 LLM）
+    3. 在开头用 [技巧: xxx] 标注使用了什么技巧
+    4. 不要解释，只输出 Prompt
+
+    用户原始输入：{user_input}
+
+    优化后的 Prompt：
