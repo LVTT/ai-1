@@ -16,6 +16,7 @@ from enum import Enum
 from config.settings import OPENAI_API_KEY, OPENAI_BASE_URL, DEFAULT_LLM_MODEL
 from rag.pipeline import RAGPipeline
 from agent.agent_core import Agent
+from prompts.templates import get_task_prompt
 
 
 class IntentType(Enum):
@@ -41,18 +42,7 @@ class FullAIPipeline:
         result = pipeline.process("什么是RAG？")
     """
 
-    INTENT_PROMPT = """分析用户请求，判断其意图类型。只输出意图类型，不要解释。
-
-可选意图：
-- knowledge: 需要查询已有知识库（如"什么是XXX？"、"解释一下YYY的概念"）
-- tool: 需要获取实时信息或执行操作（如"今天天气"、"搜索"、"计算"）
-- creative: 创意生成任务（如"写一首诗"、"生成文案"）
-- analysis: 分析评估任务（如"分析优缺点"、"比较A和B"）
-- general: 其他一般性问答
-
-用户请求：{query}
-
-意图类型："""
+    INTENT_PROMPT = get_task_prompt("intent")
 
     def __init__(
         self,

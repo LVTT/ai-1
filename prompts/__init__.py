@@ -22,6 +22,10 @@ from .debug_tools import (
     compare_prompts,
     evaluate_prompt,
 )
+from .templates import (
+    get_task_prompt,
+    get_system_prompt,
+)
 
 __all__ = [
     # 基础
@@ -40,4 +44,7 @@ __all__ = [
     "PromptDebugger",
     "compare_prompts",
     "evaluate_prompt",
+    # YAML 模板加载
+    "get_task_prompt",
+    "get_system_prompt",
 ]

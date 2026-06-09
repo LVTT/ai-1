@@ -8,6 +8,7 @@ from dataclasses import dataclass
 import json
 
 from config.settings import OPENAI_API_KEY, OPENAI_BASE_URL, DEFAULT_LLM_MODEL
+from prompts.templates import get_task_prompt, get_system_prompt
 
 
 @dataclass
@@ -23,33 +24,8 @@ class TaskPlanner:
     将复杂请求分解为多个可执行步骤。
     """
 
-    PLANNING_PROMPT = """你是一个任务规划专家。请将用户的请求分解为具体的执行步骤。
-
-可用的工具：
-{tools_description}
-
-请按以下 JSON 格式输出计划：
-{{
-  "reasoning": "对任务的分析和规划思路",
-  "steps": [
-    {{
-      "step_number": 1,
-      "description": "步骤描述",
-      "tool": "工具名称（如不需要工具则填 null）",
-      "tool_input": "工具的输入参数"
-    }}
-  ]
-}}
-
-注意：
-1. 每个步骤应该明确、可执行
-2. 优先使用工具获取实时信息
-3. 如果任务简单，可以只有一步
-4. 最后一步应该是综合所有信息给出最终回答
-
-用户请求：{query}
-
-请输出计划（只输出 JSON，不要其他内容）："""
+    PLANNING_PROMPT = get_task_prompt("planning")
+    SYSTEM_PROMPT = get_system_prompt("planner")
 
     def __init__(self, model: Optional[str] = None):
         self.model = model or DEFAULT_LLM_MODEL
@@ -82,7 +58,10 @@ class TaskPlanner:
         client = self._get_client()
         response = client.chat.completions.create(
             model=self.model,
-            messages=[{"role": "user", "content": prompt}],
+            messages=[
+                {"role": "system", "content": self.SYSTEM_PROMPT},
+                {"role": "user", "content": prompt},
+            ],
             temperature=0.3,
             max_tokens=1024,
         )
