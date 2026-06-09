@@ -1,8 +1,4 @@
 import streamlit as st
-import sys
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from config.settings import check_api_key
 from ui.components.common import api_key_warning
@@ -92,9 +88,11 @@ with tab2:
                         for step in result["steps"]:
                             st.markdown(f"**步骤 {step['iteration']}**")
                             st.markdown(f"- 思考：{step.get('thought', '')}")
-                            st.markdown(f"- 行动：{step.get('action', '')}({step.get('action_input', '')})")
+                            st.markdown(
+                                f"- 行动：{step.get('action', '')}({step.get('action_input', '')})")
                             obs = step.get('observation', '')
-                            st.markdown(f"- 观察：{obs[:300]}{'...' if len(obs) > 300 else ''}")
+                            st.markdown(
+                                f"- 观察：{obs[:300]}{'...' if len(obs) > 300 else ''}")
                             st.divider()
 
                 except Exception as e:

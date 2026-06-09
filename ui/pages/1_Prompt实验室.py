@@ -1,8 +1,4 @@
 import streamlit as st
-import sys
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from config.settings import check_api_key
 from prompts.basics import (
@@ -55,7 +51,8 @@ if technique_category == "基础技巧":
 
     if technique == "直接提问 (Basic)":
         prompt = basic_prompt(user_input)
-        code_showcase("代码", "from prompts.basics import basic_prompt\n\nprompt = basic_prompt(user_input)")
+        code_showcase(
+            "代码", "from prompts.basics import basic_prompt\n\nprompt = basic_prompt(user_input)")
 
     elif technique == "角色设定 (Role)":
         role = st.text_input("角色", "机器学习专家")
@@ -65,7 +62,8 @@ if technique_category == "基础技巧":
     elif technique == "指令明确 (Instruction)":
         instruction = st.text_input("指令", "用三句话概括")
         prompt = instruction_prompt(user_input, instruction)
-        code_showcase("代码", f'prompt = instruction_prompt(user_input, "{instruction}")')
+        code_showcase(
+            "代码", f'prompt = instruction_prompt(user_input, "{instruction}")')
 
     elif technique == "提供上下文 (Context)":
         context = st.text_area("上下文", "我正在准备一场关于 AI 的演讲，听众是非技术人员")
@@ -82,10 +80,13 @@ if technique_category == "基础技巧":
         code_showcase("代码", "prompt = step_by_step_prompt(user_input)")
 
     elif technique == "约束条件 (Constraint)":
-        constraints_input = st.text_area("约束条件（每行一个）", "回答不超过100字\n使用中文\n避免专业术语")
-        constraints = [c.strip() for c in constraints_input.split("\n") if c.strip()]
+        constraints_input = st.text_area(
+            "约束条件（每行一个）", "回答不超过100字\n使用中文\n避免专业术语")
+        constraints = [c.strip()
+                       for c in constraints_input.split("\n") if c.strip()]
         prompt = constraint_prompt(user_input, constraints)
-        code_showcase("代码", "prompt = constraint_prompt(user_input, constraints)")
+        code_showcase(
+            "代码", "prompt = constraint_prompt(user_input, constraints)")
 
     elif technique == "详细人设 (Persona)":
         st.info("使用预设人设模板")
@@ -97,7 +98,8 @@ if technique_category == "基础技巧":
             "回答结构": "先给出直观理解，再展开细节",
         }
         prompt = persona_prompt(user_input, persona)
-        code_showcase("代码", "persona = {\"name\": \"李老师\", \"职业\": \"大学教授\", ...}\nprompt = persona_prompt(user_input, persona)")
+        code_showcase(
+            "代码", "persona = {\"name\": \"李老师\", \"职业\": \"大学教授\", ...}\nprompt = persona_prompt(user_input, persona)")
 
     st.divider()
     st.subheader("生成的 Prompt")
@@ -108,7 +110,8 @@ if technique_category == "基础技巧":
             try:
                 from openai import OpenAI
                 from config.settings import OPENAI_API_KEY, OPENAI_BASE_URL, DEFAULT_LLM_MODEL
-                client = OpenAI(api_key=OPENAI_API_KEY, base_url=OPENAI_BASE_URL)
+                client = OpenAI(api_key=OPENAI_API_KEY,
+                                base_url=OPENAI_BASE_URL)
                 response = client.chat.completions.create(
                     model=DEFAULT_LLM_MODEL,
                     messages=[{"role": "user", "content": prompt}],
@@ -149,7 +152,8 @@ else:
         with st.expander("查看示例数据"):
             st.json(examples)
 
-        code_showcase("代码", "examples = [{\"input\": \"...\", \"output\": \"...\"}]\nprompt = few_shot_prompt(user_input, examples, instruction)")
+        code_showcase(
+            "代码", "examples = [{\"input\": \"...\", \"output\": \"...\"}]\nprompt = few_shot_prompt(user_input, examples, instruction)")
 
     elif technique == "Chain-of-Thought 思维链":
         st.markdown("引导模型展示推理过程，而非直接给出答案。")
@@ -162,23 +166,27 @@ else:
         user_input = st.text_area("问题", "如何提高代码的可维护性？")
         num_paths = st.slider("思考角度数", 2, 5, 3)
         prompt = self_consistency_prompt(user_input, num_paths)
-        code_showcase("代码", f"prompt = self_consistency_prompt(user_input, {num_paths})")
+        code_showcase(
+            "代码", f"prompt = self_consistency_prompt(user_input, {num_paths})")
 
     elif technique == "Tree-of-Thoughts 思维树":
         st.markdown("在每个思考步骤探索多种可能性，像树一样分支。")
         user_input = st.text_area("问题", "设计一个高性能的Web API")
         prompt = tree_of_thoughts_prompt(user_input, num_branches=3, depth=2)
-        code_showcase("代码", "prompt = tree_of_thoughts_prompt(user_input, num_branches=3, depth=2)")
+        code_showcase(
+            "代码", "prompt = tree_of_thoughts_prompt(user_input, num_branches=3, depth=2)")
 
     elif technique == "ReAct 模板":
         st.markdown("ReAct = Reasoning + Acting，让模型交替进行思考和行动。")
         prompt = react_prompt_template()
         st.info("这是一个模板函数，需要传入 tools_description 和 question")
-        code_showcase("代码", 'prompt = react_prompt_template()\nformatted = prompt.format(tools_description="...", question="...")')
+        code_showcase(
+            "代码", 'prompt = react_prompt_template()\nformatted = prompt.format(tools_description="...", question="...")')
         # 展示格式化后的样子
         tools_desc = "- search: 搜索网络信息\n- calculator: 计算数学表达式"
         question = "2024年诺贝尔奖得主是谁？"
-        formatted = prompt.format(tools_description=tools_desc, question=question)
+        formatted = prompt.format(
+            tools_description=tools_desc, question=question)
         prompt = formatted
 
     elif technique == "自动 Prompt 工程 (APE)":
@@ -186,7 +194,8 @@ else:
         task = st.text_area("任务描述", "从文本中提取人名、地点和时间")
         initial = st.text_area("初始 Prompt（可选）", "")
         prompt = automatic_prompt_engineering_prompt(task, initial)
-        code_showcase("代码", "prompt = automatic_prompt_engineering_prompt(task_description, initial_prompt)")
+        code_showcase(
+            "代码", "prompt = automatic_prompt_engineering_prompt(task_description, initial_prompt)")
 
     st.divider()
     st.subheader("生成的 Prompt")
@@ -197,7 +206,8 @@ else:
             try:
                 from openai import OpenAI
                 from config.settings import OPENAI_API_KEY, OPENAI_BASE_URL, DEFAULT_LLM_MODEL
-                client = OpenAI(api_key=OPENAI_API_KEY, base_url=OPENAI_BASE_URL)
+                client = OpenAI(api_key=OPENAI_API_KEY,
+                                base_url=OPENAI_BASE_URL)
                 response = client.chat.completions.create(
                     model=DEFAULT_LLM_MODEL,
                     messages=[{"role": "user", "content": prompt}],

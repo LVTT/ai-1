@@ -1,8 +1,4 @@
 import streamlit as st
-import sys
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from config.settings import SAMPLE_DOCS_DIR, check_api_key
 from ui.components.common import api_key_warning
@@ -59,7 +55,8 @@ with tab1:
                     if result["status"] == "success":
                         st.session_state.rag_pipeline = pipeline
                         st.session_state.rag_initialized = True
-                        st.success(f"✅ 入库成功！共处理 {result['chunks_ingested']} 个文档块")
+                        st.success(
+                            f"✅ 入库成功！共处理 {result['chunks_ingested']} 个文档块")
                         st.json(result["vector_store_stats"])
                     else:
                         st.error(result["message"])
@@ -85,7 +82,8 @@ with tab2:
         if st.button("🔎 检索"):
             with st.spinner("正在检索..."):
                 try:
-                    docs = st.session_state.rag_pipeline.query_only_retrieve(query, top_k=top_k)
+                    docs = st.session_state.rag_pipeline.query_only_retrieve(
+                        query, top_k=top_k)
                     st.success(f"检索到 {len(docs)} 条结果")
 
                     for i, doc in enumerate(docs, 1):
@@ -93,7 +91,8 @@ with tab2:
                             st.markdown(f"**结果 {i}** | 相似度分数: {doc.score:.4f}")
                             source = doc.metadata.get("file_name", "未知")
                             st.caption(f"来源：{source}")
-                            st.markdown(doc.content[:500] + "..." if len(doc.content) > 500 else doc.content)
+                            st.markdown(
+                                doc.content[:500] + "..." if len(doc.content) > 500 else doc.content)
                 except Exception as e:
                     st.error(f"检索失败：{e}")
 
@@ -109,7 +108,8 @@ with tab3:
         if st.button("💬 生成回答"):
             with st.spinner("正在检索和生成..."):
                 try:
-                    result = st.session_state.rag_pipeline.query(query, return_sources=True)
+                    result = st.session_state.rag_pipeline.query(
+                        query, return_sources=True)
 
                     st.markdown("### 回答")
                     st.markdown(result["answer"])
@@ -117,7 +117,8 @@ with tab3:
                     if result.get("sources"):
                         st.markdown("### 参考来源")
                         for src in result["sources"]:
-                            st.caption(f"📄 {src['source']} (score: {src['score']:.4f})")
+                            st.caption(
+                                f"📄 {src['source']} (score: {src['score']:.4f})")
 
                     with st.expander("查看完整 Prompt"):
                         st.code(result.get("prompt", ""), language="text")

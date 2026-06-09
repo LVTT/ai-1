@@ -1,8 +1,4 @@
 import streamlit as st
-import sys
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from config.settings import SAMPLE_DOCS_DIR, check_api_key
 from ui.components.common import api_key_warning
@@ -106,7 +102,8 @@ with tab2:
                 with st.spinner("正在处理..."):
                     try:
                         mode = force_mode_map[force_mode]
-                        result = st.session_state.full_pipeline.process(query, force_mode=mode)
+                        result = st.session_state.full_pipeline.process(
+                            query, force_mode=mode)
 
                         # 显示处理路径
                         path = result.get("mode", "unknown")
@@ -131,7 +128,8 @@ with tab2:
                         if "steps" in result and result["steps"]:
                             with st.expander("执行步骤"):
                                 for step in result["steps"]:
-                                    st.markdown(f"**步骤 {step['iteration']}**: {step.get('thought', '')}")
+                                    st.markdown(
+                                        f"**步骤 {step['iteration']}**: {step.get('thought', '')}")
 
                     except Exception as e:
                         st.error(f"处理失败：{e}")
