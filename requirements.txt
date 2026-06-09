@@ -1,0 +1,33 @@
+# LLM & LangChain 核心依赖
+langchain>=0.2.0                    # LLM 应用开发框架，提供链式调用、提示词管理、RAG Pipeline 等核心抽象
+langchain-openai>=0.1.0             # LangChain 的 OpenAI 集成包，封装 ChatOpenAI / OpenAIEmbeddings 等组件
+langchain-community>=0.2.0          # LangChain 社区贡献的第三方集成（如 Chroma 向量库、文档加载器等）
+langchain-core>=0.2.0               # LangChain 核心库，定义基础接口、消息类型和运行时抽象
+openai>=1.30.0                      # OpenAI 官方 Python SDK，直接调用 GPT 系列模型 API
+
+# 向量数据库 & Embedding
+chromadb>=0.5.0                     # 开源向量数据库，存储文本嵌入向量并支持相似度检索
+sentence-transformers>=3.0.0        # 本地 Embedding 模型库，将文本转为向量（无需 API Key，可离线使用）
+
+# RAG 文档处理
+pypdf>=4.0.0                        # PDF 文件解析库，读取 PDF 文档的文本和元数据
+unstructured>=0.14.0                # 通用文档解析框架，支持 HTML、Markdown、图片等多种格式
+python-docx>=1.1.0                  # Word 文档解析库，读取 .docx 文件的段落和表格内容
+
+# Streamlit UI
+streamlit>=1.35.0                   # Web 应用框架，快速搭建交互式数据应用和实验室界面
+streamlit-chat>=0.1.1               # Streamlit 聊天 UI 组件，提供对话气泡和消息列表样式
+
+# 工具 & 工具依赖
+duckduckgo-search>=5.0.0            # DuckDuckGo 搜索引擎封装，为 Agent 提供联网搜索工具
+wikipedia>=1.4.0                    # Wikipedia API 封装，支持查询百科知识作为外部知识源
+numexpr>=2.10.0                     # 数值表达式计算库，LangChain 数学工具链的底层依赖
+
+# 配置 & 工具
+python-dotenv>=1.0.0                # 环境变量加载工具，从 .env 文件读取 API Key 等配置
+pyyaml>=6.0.0                       # YAML 文件解析库，用于读取提示词模板和系统配置
+pydantic>=2.7.0                     # 数据校验和配置管理库，提供类型安全的模型定义和验证
+
+# 开发 & 测试
+pytest>=8.2.0                       # Python 单元测试框架，组织和运行测试用例
+pytest-asyncio>=0.23.0              # pytest 异步测试插件，支持 async/await 语法的测试用例

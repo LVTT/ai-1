@@ -1,0 +1,88 @@
+# 任务级 Prompt 模板库
+# 适用于具体任务的 Prompt 模板
+
+summarize:
+  name: 文本摘要
+  description: 对长文本进行摘要
+  prompt: |
+    请对以下文本进行摘要。
+    要求：
+    - 保留核心观点和关键数据
+    - 字数控制在原文的 20% 以内
+    - 使用客观中立的语气
+
+    原文：
+    {text}
+
+    摘要：
+
+extract:
+  name: 信息抽取
+  description: 从文本中提取结构化信息
+  prompt: |
+    请从以下文本中提取指定信息，以 JSON 格式输出。
+    需要提取的字段：{fields}
+
+    文本：
+    {text}
+
+    输出格式示例：
+    {{
+      "字段1": "值1",
+      "字段2": "值2"
+    }}
+
+classify:
+  name: 文本分类
+  description: 对文本进行分类
+  prompt: |
+    请将以下文本分类到最合适的类别中。
+    可选类别：{categories}
+
+    文本：
+    {text}
+
+    请只输出类别名称，不要解释。
+
+compare:
+  name: 对比分析
+  description: 对比两个或多个对象
+  prompt: |
+    请对以下内容进行对比分析。
+    对比对象：{items}
+
+    请从以下维度进行对比：{dimensions}
+
+    输出格式：
+    | 维度 | {item_names} |
+    |---|---|
+    | ... | ... |
+
+    总结：
+
+qa:
+  name: 问答生成
+  description: 基于文本生成问答对
+  prompt: |
+    请基于以下文本生成 {num_questions} 个高质量的问答对。
+    要求：
+    - 问题应覆盖文本的不同方面
+    - 答案应直接从文本中可找到
+    - 包含事实性问题和推理性问题
+
+    文本：
+    {text}
+
+    问答对：
+    Q1: ...
+    A1: ...
+
+rewrite:
+  name: 文本改写
+  description: 以不同风格改写文本
+  prompt: |
+    请将以下文本改写为 {style} 风格。
+    原文：
+    {text}
+
+    改写后的文本：

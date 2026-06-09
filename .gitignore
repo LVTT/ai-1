@@ -1,0 +1,28 @@
+# 虚拟环境
+venv/
+env/
+.venv/
+
+# 环境变量（包含 API Key 等敏感信息）
+.env
+
+# Python 缓存
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# 向量数据库（数据量大，且可重新生成）
+data/chroma_db/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# 测试缓存
+.pytest_cache/
+.coverage
+
+# 系统文件
+.DS_Store
