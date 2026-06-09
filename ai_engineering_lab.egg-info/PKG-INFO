@@ -1,0 +1,5 @@
+Metadata-Version: 2.4
+Name: ai-engineering-lab
+Version: 0.1.0
+Summary: AI 工程化实验室 - Prompt / RAG / Agent 学习项目
+Requires-Python: >=3.9
