@@ -1,7 +1,52 @@
+import re
+import html as html_module
+
 import streamlit as st
 
 from config.settings import KD_CRM_DOCS_DIR, check_api_key
 from ui.components.common import api_key_warning
+
+
+def _highlight_text(text: str, query: str) -> str:
+    """高亮文档片段中与查询相关的关键词"""
+    if not query or not text:
+        return html_module.escape(text)
+
+    # 提取查询中的关键词（过滤掉太短的和常见停用词）
+    stop_words = {"的", "了", "是", "在", "我", "有", "和", "就", "不", "人", "都", "一", "一个", "上", "也", "很", "到", "说", "要", "去", "你",
+                  "会", "着", "没有", "看", "好", "自己", "这", "那", "什么", "怎么", "吗", "呢", "吧", "啊", "吗", "么", "如何", "哪些", "哪个", "谁", "几", "多少"}
+    words = re.findall(r'[\u4e00-\u9fff]{2,}|[a-zA-Z]+', query)
+    keywords = [w for w in words if w.lower(
+    ) not in stop_words and len(w) >= 2]
+
+    if not keywords:
+        return html_module.escape(text)
+
+    # 先转义 HTML
+    escaped = html_module.escape(text)
+
+    # 高亮关键词（按长度降序，避免短词干扰长词）
+    highlighted = escaped
+    for kw in sorted(set(keywords), key=len, reverse=True):
+        pattern = re.compile(re.escape(kw), re.IGNORECASE)
+        highlighted = pattern.sub(
+            f'<mark style="background-color: #ffeb3b; color: #000; padding: 1px 3px; border-radius: 3px; font-weight: 600;">{kw}</mark>',
+            highlighted
+        )
+    return highlighted
+
+
+def _score_label(score: float) -> str:
+    """根据相似度分数返回匹配度说明"""
+    if score >= 0.8:
+        return "🔥 高度相关"
+    elif score >= 0.6:
+        return "⭐ 中度相关"
+    elif score >= 0.4:
+        return "📌 低度相关"
+    else:
+        return "📎 弱相关"
+
 
 st.set_page_config(page_title="KD-CRM 文档检索（原始需求回溯）",
                    page_icon="📋", layout="wide")
@@ -132,13 +177,20 @@ with tab2:
 
                     for i, doc in enumerate(docs, 1):
                         with st.container(border=True):
-                            st.markdown(f"**结果 {i}** | 相似度分数: {doc.score:.4f}")
+                            label = _score_label(doc.score)
+                            st.markdown(
+                                f"**结果 {i}** | {label} | 相似度: {doc.score:.4f}")
                             source = doc.metadata.get("file_name", "未知")
                             chunk = f"{doc.metadata.get('chunk_index', 0) + 1}/{doc.metadata.get('total_chunks', 1)}"
                             pos = f"{doc.metadata.get('position_percent', 0)}%"
                             st.caption(f"📄 {source} | 第 {chunk} 块 | 位置约 {pos}")
+
+                            # 高亮显示匹配关键词
+                            display_text = doc.content[:600] + "..." if len(
+                                doc.content) > 600 else doc.content
+                            highlighted = _highlight_text(display_text, query)
                             st.markdown(
-                                doc.content[:500] + "..." if len(doc.content) > 500 else doc.content)
+                                f"<div style='line-height: 1.7;'>{highlighted}</div>", unsafe_allow_html=True)
                 except Exception as e:
                     st.error(f"检索失败：{e}")
 

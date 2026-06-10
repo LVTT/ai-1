@@ -11,6 +11,9 @@ import os
 # 使用 HuggingFace 国内镜像，避免模型下载超时
 os.environ.setdefault("HF_ENDPOINT", "https://hf-mirror.com")
 
+# 模块级全局缓存：本地模型只加载一次，所有实例共享
+_global_local_model = None
+
 
 class EmbeddingManager:
     """Embedding 管理器
@@ -45,20 +48,31 @@ class EmbeddingManager:
         return self._client
 
     def _get_local_model(self):
-        """获取本地 embedding 模型"""
-        if self._local_model is None:
-            try:
-                from sentence_transformers import SentenceTransformer
-            except ImportError:
-                raise ImportError(
-                    "请安装 sentence-transformers: pip install sentence-transformers")
+        """获取本地 embedding 模型（模块级缓存，只加载一次）"""
+        global _global_local_model
 
-            # 强制使用中文模型（BAAI/bge-small-zh-v1.5 约 100MB，速度快且中文效果好）
-            model_name = "BAAI/bge-small-zh-v1.5"
-            print(f"正在加载本地模型: {model_name}...")
-            print("首次使用需下载模型（约 100MB），请耐心等待...")
-            self._local_model = SentenceTransformer(model_name)
-            print(f"模型加载完成: {model_name}")
+        # 优先使用模块级全局缓存
+        if _global_local_model is not None:
+            return _global_local_model
+
+        # 回退到实例缓存（兼容旧逻辑）
+        if self._local_model is not None:
+            _global_local_model = self._local_model
+            return _global_local_model
+
+        try:
+            from sentence_transformers import SentenceTransformer
+        except ImportError:
+            raise ImportError(
+                "请安装 sentence-transformers: pip install sentence-transformers")
+
+        # 强制使用中文模型（BAAI/bge-small-zh-v1.5 约 100MB，速度快且中文效果好）
+        model_name = "BAAI/bge-small-zh-v1.5"
+        print(f"正在加载本地模型: {model_name}...")
+        print("首次使用需下载模型（约 100MB），请耐心等待...")
+        self._local_model = SentenceTransformer(model_name)
+        _global_local_model = self._local_model  # 存入全局缓存
+        print(f"模型加载完成: {model_name}")
         return self._local_model
 
     def embed_texts(self, texts: List[str]) -> List[List[float]]:
