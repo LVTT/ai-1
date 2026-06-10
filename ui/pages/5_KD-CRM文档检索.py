@@ -67,14 +67,32 @@ if "kd_crm_initialized" not in st.session_state:
     st.session_state.kd_crm_initialized = False
 if "kd_crm_detected_count" not in st.session_state:
     st.session_state.kd_crm_detected_count = 0
+if "kd_crm_user_cleared" not in st.session_state:
+    st.session_state.kd_crm_user_cleared = False
 
-# 自动检测：如果向量库中已有 kd_crm 数据，显示恢复提示（不自动恢复，避免清空后"复活"）
-if not st.session_state.kd_crm_initialized:
+# 自动检测：用户未手动清空过，且向量库有数据，则自动恢复
+if not st.session_state.kd_crm_initialized and not st.session_state.kd_crm_user_cleared:
     try:
         from rag.vector_store import VectorStoreManager
         vs = VectorStoreManager(collection_name="kd_crm")
         stats = vs.get_stats()
-        st.session_state.kd_crm_detected_count = stats.get("document_count", 0)
+        count = stats.get("document_count", 0)
+        st.session_state.kd_crm_detected_count = count
+        if count > 0:
+            from rag.pipeline import RAGPipeline
+            from rag.vector_store import VectorStoreManager
+            pipeline = RAGPipeline(
+                chunk_size=1000,
+                chunk_overlap=200,
+                top_k=4,
+                use_local_embedding=True,
+            )
+            # 切换到 kd_crm collection（默认是 default，必须显式切换）
+            pipeline.vector_store = VectorStoreManager(
+                collection_name="kd_crm")
+            pipeline.retriever.vector_store = pipeline.vector_store
+            st.session_state.kd_crm_pipeline = pipeline
+            st.session_state.kd_crm_initialized = True
     except Exception:
         st.session_state.kd_crm_detected_count = 0
 
@@ -98,7 +116,7 @@ with tab1:
     st.header("CRM 文档入库")
     st.markdown("将 KD-CRM 相关文档放入目录后，点击入库按钮完成：加载 → 分块 → 向量化 → 存储")
 
-    # 检测到历史数据但未初始化时，显示恢复提示
+    # 检测到历史数据但未初始化时，显示恢复提示（仅用户手动清空后才会出现）
     if not st.session_state.kd_crm_initialized and st.session_state.kd_crm_detected_count > 0:
         st.warning(
             f"⚠️ 检测到向量库中有 {st.session_state.kd_crm_detected_count} 条历史数据，但当前未加载。")
@@ -106,14 +124,19 @@ with tab1:
             with st.spinner("正在恢复索引..."):
                 try:
                     from rag.pipeline import RAGPipeline
+                    from rag.vector_store import VectorStoreManager
                     pipeline = RAGPipeline(
                         chunk_size=1000,
                         chunk_overlap=200,
                         top_k=4,
                         use_local_embedding=True,
                     )
+                    pipeline.vector_store = VectorStoreManager(
+                        collection_name="kd_crm")
+                    pipeline.retriever.vector_store = pipeline.vector_store
                     st.session_state.kd_crm_pipeline = pipeline
                     st.session_state.kd_crm_initialized = True
+                    st.session_state.kd_crm_user_cleared = False
                     st.rerun()
                 except Exception as e:
                     st.error(f"恢复失败：{e}")
@@ -139,6 +162,7 @@ with tab1:
                     if result["status"] == "success":
                         st.session_state.kd_crm_pipeline = pipeline
                         st.session_state.kd_crm_initialized = True
+                        st.session_state.kd_crm_user_cleared = False
                         st.success(
                             f"✅ 入库成功！共处理 {result['chunks_ingested']} 个文档块")
                         st.json(result["vector_store_stats"])
@@ -157,6 +181,7 @@ with tab1:
             st.session_state.kd_crm_pipeline = None
             st.session_state.kd_crm_initialized = False
             st.session_state.kd_crm_detected_count = 0
+            st.session_state.kd_crm_user_cleared = True
             st.rerun()
 
 with tab2:
