@@ -30,6 +30,7 @@ AGENT_TIMEOUT = int(os.getenv("AGENT_TIMEOUT", "60"))
 # 数据目录
 DATA_DIR = PROJECT_ROOT / "data"
 SAMPLE_DOCS_DIR = DATA_DIR / "sample_docs"
+KD_CRM_DOCS_DIR = DATA_DIR / "kd_crm_docs"
 
 
 def check_api_key() -> bool:
