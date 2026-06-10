@@ -122,6 +122,7 @@ class VectorStoreManager:
         except Exception:
             pass
         self._collection = None
+        self._client = None  # 重置客户端，避免缓存导致数据"复活"
 
     def get_stats(self) -> Dict[str, Any]:
         """获取集合统计信息"""

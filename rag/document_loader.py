@@ -158,10 +158,16 @@ class DocumentLoader:
 
         for doc in documents:
             chunks = self.split_text(doc.content)
+            total_len = len(doc.content)
             for i, chunk in enumerate(chunks):
                 metadata = doc.metadata.copy()
                 metadata["chunk_index"] = i
                 metadata["total_chunks"] = len(chunks)
+                # 计算这块在原文中的大致位置百分比
+                chunk_start = i * (self.chunk_size - self.chunk_overlap)
+                metadata["position_percent"] = round(
+                    min(100, (chunk_start / max(total_len, 1)) * 100), 1
+                )
                 split_docs.append(Document(
                     content=chunk,
                     metadata=metadata,

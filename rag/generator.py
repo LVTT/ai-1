@@ -58,8 +58,11 @@ class Generator:
         for i, doc in enumerate(documents, 1):
             source = doc.metadata.get(
                 "file_name", doc.metadata.get("source", "未知"))
+            chunk_idx = doc.metadata.get("chunk_index", 0)
+            total = doc.metadata.get("total_chunks", 1)
+            pos = doc.metadata.get("position_percent", 0)
             context_parts.append(
-                f"[文档 {i}]（来源：{source}）\n{doc.content}\n"
+                f"[文档 {i}]（来源：{source} | 第 {chunk_idx+1}/{total} 块 | 位置约 {pos}%）\n{doc.content}\n"
             )
         context = "\n".join(context_parts)
 
@@ -120,8 +123,11 @@ class Generator:
         for i, doc in enumerate(documents, 1):
             source = doc.metadata.get(
                 "file_name", doc.metadata.get("source", "未知"))
+            chunk_idx = doc.metadata.get("chunk_index", 0)
+            total = doc.metadata.get("total_chunks", 1)
+            pos = doc.metadata.get("position_percent", 0)
             context_parts.append(
-                f"[文档 {i}]（来源：{source}）\n{doc.content}\n"
+                f"[文档 {i}]（来源：{source} | 第 {chunk_idx+1}/{total} 块 | 位置约 {pos}%）\n{doc.content}\n"
             )
         context = "\n".join(context_parts)
 
@@ -152,6 +158,8 @@ class Generator:
                 {
                     "id": doc.id,
                     "source": doc.metadata.get("file_name", doc.metadata.get("source", "未知")),
+                    "chunk": f"{doc.metadata.get('chunk_index', 0) + 1}/{doc.metadata.get('total_chunks', 1)}",
+                    "position": f"{doc.metadata.get('position_percent', 0)}%",
                     "score": doc.score,
                 }
                 for doc in documents

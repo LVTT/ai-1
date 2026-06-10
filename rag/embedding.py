@@ -3,10 +3,13 @@
 负责将文本转换为向量表示。
 """
 
-from typing import List, Optional
-import numpy as np
-
 from config.settings import OPENAI_API_KEY, OPENAI_BASE_URL, EMBEDDING_MODEL
+import numpy as np
+from typing import List, Optional
+import os
+
+# 使用 HuggingFace 国内镜像，避免模型下载超时
+os.environ.setdefault("HF_ENDPOINT", "https://hf-mirror.com")
 
 
 class EmbeddingManager:
@@ -50,9 +53,12 @@ class EmbeddingManager:
                 raise ImportError(
                     "请安装 sentence-transformers: pip install sentence-transformers")
 
-            model_name = "BAAI/bge-large-zh-v1.5" if "zh" in self.model_name else "all-MiniLM-L6-v2"
+            # 强制使用中文模型（BAAI/bge-small-zh-v1.5 约 100MB，速度快且中文效果好）
+            model_name = "BAAI/bge-small-zh-v1.5"
             print(f"正在加载本地模型: {model_name}...")
+            print("首次使用需下载模型（约 100MB），请耐心等待...")
             self._local_model = SentenceTransformer(model_name)
+            print(f"模型加载完成: {model_name}")
         return self._local_model
 
     def embed_texts(self, texts: List[str]) -> List[List[float]]:
