@@ -94,17 +94,22 @@ def auto_optimize_prompt(user_input: str) -> str:
 
     调用 LLM 识别最适合的技巧组合，直接返回优化后的完整 Prompt。
     """
-    from openai import OpenAI
+    from openai import OpenAI  # 在函数内部延迟导入 OpenAI 客户端（避免循环导入问题）
+    # 从配置模块读取 API Key、Base URL 和模型名称
     from config.settings import OPENAI_API_KEY, OPENAI_BASE_URL, DEFAULT_LLM_MODEL
 
+    # 从 task_prompts.yaml 加载 "optimize_prompt" 智能优化模板
     template = get_task_prompt("optimize_prompt")
+    # 将用户的原始输入填充进模板，生成完整的优化请求 Prompt
     prompt = template.format(user_input=user_input)
 
+    # 创建 OpenAI 客户端实例（实际指向 DeepSeek 服务）
     client = OpenAI(api_key=OPENAI_API_KEY, base_url=OPENAI_BASE_URL)
-    response = client.chat.completions.create(
-        model=DEFAULT_LLM_MODEL,
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0.3,
-        max_tokens=2048,
+    response = client.chat.completions.create(  # 调用 LLM 聊天补全 API
+        model=DEFAULT_LLM_MODEL,  # 使用配置中的默认模型（如 deepseek-chat）
+        messages=[{"role": "user", "content": prompt}],  # 将优化请求作为用户消息发送给 LLM
+        temperature=0.3,  # 低温度（0.3），让 LLM 输出更确定、更稳定的分析结果
+        max_tokens=2048,  # 最大输出 token 数，确保生成的优化 Prompt 不会被截断
     )
+    # 返回 LLM 优化后的 Prompt；如果失败则回退返回原始输入
     return response.choices[0].message.content or user_input
