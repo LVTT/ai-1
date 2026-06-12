@@ -11,6 +11,7 @@ from rag.embedding import EmbeddingManager
 from rag.vector_store import VectorStoreManager
 from rag.retriever import Retriever, RetrievedDocument
 from rag.generator import Generator
+from rag.reranker import Reranker
 
 
 class RAGPipeline:
@@ -29,6 +30,7 @@ class RAGPipeline:
         embedding_manager: Optional[EmbeddingManager] = None,
         vector_store: Optional[VectorStoreManager] = None,
         generator: Optional[Generator] = None,
+        reranker: Optional[Reranker] = None,
         top_k: int = 4,
         use_local_embedding: bool = False,
     ):
@@ -43,6 +45,8 @@ class RAGPipeline:
             top_k=top_k,
         )
         self.generator = generator or Generator()
+        self.reranker = reranker
+        self.top_k = top_k
 
     def ingest(
         self,
@@ -101,14 +105,14 @@ class RAGPipeline:
     ) -> Dict[str, Any]:
         """查询流程
 
-        1. 检索相关文档
+        1. 检索相关文档（支持重排序）
         2. 构建 Prompt
         3. 生成回答
         """
         print(f"[RAG] 查询: {query}")
 
         # 检索
-        documents = self.retriever.retrieve(query, top_k=top_k)
+        documents = self._retrieve_with_optional_rerank(query, top_k=top_k)
         print(f"[RAG] 检索到 {len(documents)} 条相关文档")
 
         if not documents:
@@ -132,7 +136,27 @@ class RAGPipeline:
         top_k: Optional[int] = None,
     ) -> List[RetrievedDocument]:
         """仅检索，不生成（用于调试检索效果）"""
-        return self.retriever.retrieve(query, top_k=top_k)
+        return self._retrieve_with_optional_rerank(query, top_k=top_k)
+
+    def _retrieve_with_optional_rerank(
+        self,
+        query: str,
+        top_k: Optional[int] = None,
+    ) -> List[RetrievedDocument]:
+        """检索，可选重排序"""
+        k = top_k or self.top_k
+
+        if self.reranker:
+            # 重排序模式：先检索更多候选（3倍），再精排取 top_k
+            candidate_k = max(k * 3, 10)
+            docs = self.retriever.retrieve(query, top_k=candidate_k)
+            if len(docs) > k:
+                indices = self.reranker.rerank(
+                    query, [d.content for d in docs], top_n=k)
+                docs = [docs[i] for i in indices]
+            return docs
+        else:
+            return self.retriever.retrieve(query, top_k=k)
 
     def clear(self) -> None:
         """清空向量库"""

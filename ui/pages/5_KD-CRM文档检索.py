@@ -69,6 +69,8 @@ if "kd_crm_detected_count" not in st.session_state:
     st.session_state.kd_crm_detected_count = 0
 if "kd_crm_user_cleared" not in st.session_state:
     st.session_state.kd_crm_user_cleared = False
+if "use_rerank" not in st.session_state:
+    st.session_state.use_rerank = False
 
 # 自动检测：用户未手动清空过，且向量库有数据，则自动恢复
 if not st.session_state.kd_crm_initialized and not st.session_state.kd_crm_user_cleared:
@@ -81,11 +83,13 @@ if not st.session_state.kd_crm_initialized and not st.session_state.kd_crm_user_
         if count > 0:
             from rag.pipeline import RAGPipeline
             from rag.vector_store import VectorStoreManager
+            from rag.reranker import Reranker
             pipeline = RAGPipeline(
                 chunk_size=1000,
                 chunk_overlap=200,
                 top_k=4,
                 use_local_embedding=True,
+                reranker=Reranker() if st.session_state.use_rerank else None,
             )
             # 切换到 kd_crm collection（默认是 default，必须显式切换）
             pipeline.vector_store = VectorStoreManager(
@@ -107,6 +111,37 @@ with st.sidebar:
     if use_local:
         st.info("🔄 首次使用会自动下载中文 Embedding 模型（约 100MB），请保持网络畅通，等待 1-3 分钟")
 
+    use_rerank = st.checkbox("启用重排序（更精准，首次需下载约 400MB 模型）",
+                             value=st.session_state.use_rerank)
+    st.session_state.use_rerank = use_rerank
+    if use_rerank:
+        st.info("🔄 首次使用会自动下载中文重排序模型（约 400MB），请保持网络畅通，等待 2-5 分钟")
+
+    st.markdown("---")
+    st.header("🔍 需求追溯过滤")
+    filter_file_keyword = st.text_input(
+        "文件名关键词", "", placeholder="如：赵青青、报价、2024")
+
+    # 动态获取过滤选项（从向量库 metadata 中提取）
+    all_years = []
+    all_modules = []
+    all_people = []
+    if st.session_state.kd_crm_initialized and st.session_state.kd_crm_pipeline:
+        try:
+            stats = st.session_state.kd_crm_pipeline.vector_store.get_stats()
+            # 获取样本 metadata 来构建选项（简化处理）
+            # 由于无法直接枚举所有 metadata，使用预定义 + 动态检测
+            pass
+        except Exception:
+            pass
+
+    filter_years = st.multiselect(
+        "按年份", ["2022", "2023", "2024", "2025", "2026"], default=[])
+    filter_modules = st.multiselect(
+        "按模块", ["CRM", "销售系统", "办公系统", "费用管理", "报价"], default=[])
+    filter_people = st.multiselect(
+        "按涉及人", ["赵青青", "刘新颖", "钱金玉", "杜广宁", "仲逸明"], default=[])
+
 # 主界面
 st.info(f"📁 默认文档目录：{KD_CRM_DOCS_DIR}")
 
@@ -125,11 +160,13 @@ with tab1:
                 try:
                     from rag.pipeline import RAGPipeline
                     from rag.vector_store import VectorStoreManager
+                    from rag.reranker import Reranker
                     pipeline = RAGPipeline(
                         chunk_size=1000,
                         chunk_overlap=200,
                         top_k=4,
                         use_local_embedding=True,
+                        reranker=Reranker() if st.session_state.use_rerank else None,
                     )
                     pipeline.vector_store = VectorStoreManager(
                         collection_name="kd_crm")
@@ -150,11 +187,13 @@ with tab1:
             with st.spinner("正在初始化 KD-CRM 文档索引..."):
                 try:
                     from rag.pipeline import RAGPipeline
+                    from rag.reranker import Reranker
                     pipeline = RAGPipeline(
                         chunk_size=chunk_size,
                         chunk_overlap=chunk_overlap,
                         top_k=top_k,
                         use_local_embedding=use_local,
+                        reranker=Reranker() if st.session_state.use_rerank else None,
                     )
                     result = pipeline.ingest(
                         docs_path, collection_name="kd_crm")
@@ -198,6 +237,26 @@ with tab2:
                 try:
                     docs = st.session_state.kd_crm_pipeline.query_only_retrieve(
                         query, top_k=top_k)
+
+                    # 应用过滤器
+                    filtered = []
+                    for d in docs:
+                        fn = d.metadata.get("file_name", "")
+                        year = d.metadata.get("year", "")
+                        module = d.metadata.get("module", "")
+                        people = d.metadata.get("people", "")
+
+                        if filter_file_keyword and filter_file_keyword not in fn:
+                            continue
+                        if filter_years and year not in filter_years:
+                            continue
+                        if filter_modules and module not in filter_modules:
+                            continue
+                        if filter_people and not any(p in people for p in filter_people):
+                            continue
+                        filtered.append(d)
+
+                    docs = filtered
                     st.success(f"检索到 {len(docs)} 条结果")
 
                     for i, doc in enumerate(docs, 1):
@@ -209,6 +268,21 @@ with tab2:
                             chunk = f"{doc.metadata.get('chunk_index', 0) + 1}/{doc.metadata.get('total_chunks', 1)}"
                             pos = f"{doc.metadata.get('position_percent', 0)}%"
                             st.caption(f"📄 {source} | 第 {chunk} 块 | 位置约 {pos}")
+
+                            # 显示需求追溯元数据标签
+                            tags = []
+                            if doc.metadata.get("year"):
+                                tags.append(f"📅 {doc.metadata['year']}")
+                            if doc.metadata.get("module"):
+                                tags.append(f"🏷️ {doc.metadata['module']}")
+                            if doc.metadata.get("people"):
+                                tags.append(f"👤 {doc.metadata['people']}")
+                            if doc.metadata.get("versions"):
+                                tags.append(f"🔀 {doc.metadata['versions']}")
+                            if doc.metadata.get("statuses"):
+                                tags.append(f"✅ {doc.metadata['statuses']}")
+                            if tags:
+                                st.caption(" | ".join(tags))
 
                             # 高亮显示匹配关键词
                             display_text = doc.content[:600] + "..." if len(

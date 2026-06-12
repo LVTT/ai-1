@@ -27,6 +27,82 @@ class DocumentLoader:
         self.chunk_size = chunk_size
         self.chunk_overlap = chunk_overlap
 
+    @staticmethod
+    def _extract_metadata(text: str) -> dict:
+        """从原始文本中提取需求追溯关键信息"""
+        import re
+
+        # 提取 @人名
+        people = list(set(re.findall(r'@([\u4e00-\u9fff\w]+)', text)))
+
+        # 提取 【版本/分支】
+        versions = list(set(re.findall(r'【([^】]+)】', text)))
+
+        # 提取 [状态标签]
+        statuses = list(set(re.findall(r'\[([^\]]+)\]', text)))
+
+        # 提取日期（如 0829、2024-03-15）
+        dates = list(set(re.findall(
+            r'\b(?:20\d{2}[\-/])?\d{1,2}[\-/]\d{1,2}\b|\b\d{4}[\-/]\d{2}[\-/]\d{2}\b', text)))
+
+        meta = {}
+        if people:
+            meta["people"] = ", ".join(people)
+        if versions:
+            meta["versions"] = ", ".join(versions)
+        if statuses:
+            meta["statuses"] = ", ".join(statuses)
+        if dates:
+            meta["dates"] = ", ".join(dates)
+
+        return meta
+
+    @staticmethod
+    def _clean_text(text: str) -> str:
+        """清洗文本噪音
+
+        去除需求文档中常见的干扰信息：
+        - @人名 提及
+        - 【开发分支】等标记
+        - [一期已上线] 等状态标签
+        - 纯日期/数字行
+        - 多余空行
+        """
+        import re
+
+        lines = text.split("\n")
+        cleaned_lines = []
+
+        for line in lines:
+            original = line.strip()
+            if not original:
+                continue  # 跳过空行
+
+            # 去除 @人名（如 @钱金玉、@杜广宁@仲逸明）
+            line = re.sub(r'@[\u4e00-\u9fff\w]+', '', line)
+
+            # 去除 【...】内容
+            line = re.sub(r'【[^】]*】', '', line)
+
+            # 去除 [...] 标签（如 [一期已上线]）
+            line = re.sub(r'\[[^\]]*\]', '', line)
+
+            # 去除日期前缀行（如 0829：、0819~0823）
+            if re.match(r'^[\d]{2,4}[~\-]?[\d]{0,4}\s*[:：]?\s*$', line.strip()):
+                continue
+
+            # 去除纯数字行
+            if re.match(r'^[\d\s~\-:]+$', line.strip()):
+                continue
+
+            # 去除多余空格
+            line = re.sub(r'\s+', ' ', line).strip()
+
+            if line:
+                cleaned_lines.append(line)
+
+        return "\n".join(cleaned_lines)
+
     def load(self, source: Union[str, Path]) -> List[Document]:
         """加载单个文件或目录"""
         source = Path(source)
@@ -72,7 +148,10 @@ class DocumentLoader:
     def _load_text(self, file_path: Path) -> Document:
         """加载文本文件"""
         with open(file_path, "r", encoding="utf-8") as f:
-            content = f.read()
+            raw_content = f.read()
+
+        extra_meta = self._extract_metadata(raw_content)
+        content = self._clean_text(raw_content)
 
         return Document(
             content=content,
@@ -80,6 +159,7 @@ class DocumentLoader:
                 "file_name": file_path.name,
                 "file_type": "text",
                 "file_path": str(file_path),
+                **extra_meta,
             },
             source=str(file_path),
         )
@@ -119,7 +199,15 @@ class DocumentLoader:
 
         doc = DocxDocument(str(file_path))
         paragraphs = [p.text for p in doc.paragraphs if p.text.strip()]
-        content = "\n".join(paragraphs)
+        raw_content = "\n".join(paragraphs)
+
+        extra_meta = self._extract_metadata(raw_content)
+        content = self._clean_text(raw_content)
+
+        # 从文件名提取年份和模块
+        import re
+        year_match = re.search(r'(20\d{2})', file_path.name)
+        module_match = re.search(r'(CRM|销售系统|办公系统|费用管理|报价)', file_path.name)
 
         return Document(
             content=content,
@@ -127,6 +215,9 @@ class DocumentLoader:
                 "file_name": file_path.name,
                 "file_type": "docx",
                 "file_path": str(file_path),
+                "year": year_match.group(1) if year_match else None,
+                "module": module_match.group(1) if module_match else None,
+                **extra_meta,
             },
             source=str(file_path),
         )
